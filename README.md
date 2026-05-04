@@ -15,14 +15,14 @@ This project recreates core window manager behaviors directly in the browser: dr
 * 📝 Editable console windows (textarea-based)
 * 🎬 Smooth open / close / focus animations
 
-⌨️ Keybinds
+# ⌨️ Keybinds
 ## Key	Actions
 
 * 'n'	Open new window
 * ';'	Close active window
 * 'Y Y'	Open YouTube (In quick succession)
 * 'G G'	Open Google (In quick succession)
-* '` `'	Open Task Manager
+* 'tilde tilde'	Open Task Manager
 
 🧠 Design Philosophy
 * Keyboard-first — minimize reliance on UI buttons
