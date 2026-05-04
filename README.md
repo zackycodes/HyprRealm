@@ -4,7 +4,7 @@ A keyboard-driven, floating window system inspired by Hyprland — built entirel
 
 This project recreates core window manager behaviors directly in the browser: draggable windows, snapping, animated transitions, and a minimal workflow focused on speed and control.
 
-✨ Features
+## ✨ Features
 * 🤗 Draggable, resizable windows with momentum
 * ⚡ Keyboard-first workflow (spawn, close, launch apps)
 * 🧲 Edge snapping (left / right / fullscreen)
