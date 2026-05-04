@@ -32,7 +32,7 @@
         border-radius: 10px;
         box-shadow: 0 12px 30px rgba(0,0,0,0.5);
         color: #00ff88;
-        opacity: 0;
+        opacity: 0; 
         transform: scale(0.8);
         transition: opacity 0.25s ease, transform 0.25s ease;
         display: flex;
@@ -167,14 +167,6 @@ document.getElementById('desktop').appendChild(snapGhost);
 document.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'n') openConsole();
     else if (e.key === ';') closeLastConsole();
-    /*
-    else if (e.key === 'Control') {
-        const now = Date.now();
-        if (now - lastCtrlPress < 300 && lastInteractedConsole) toggleTemporaryTextbox(lastInteractedConsole);
-        lastCtrlPress = now;
-    } else if (e.key === '\\' && isEditing) {
-        exitEditingMode(lastInteractedConsole);
-    }*/
     else if (e.key === '`') {
         const now = Date.now();
         if (now - lastTildePress < 300) openTaskManager();
