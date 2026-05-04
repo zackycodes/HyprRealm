@@ -24,13 +24,13 @@ This project recreates core window manager behaviors directly in the browser: dr
 * 'G G'	Open Google (In quick succession)
 * 'tilde tilde'	Open Task Manager
 
-🧠 Design Philosophy
+## 🧠 Design Philosophy
 * Keyboard-first — minimize reliance on UI buttons
 * Immediate feedback — ghost previews and smooth transitions
 * Minimal state, maximum feel — simple logic, polished UX
 * No frameworks — everything built from scratch
 
-🏗️ How It Works
+## 🏗️ How It Works
 Each window is a DOM element with:
 
 - Absolute positioning
@@ -49,7 +49,7 @@ Each window is a DOM element with:
 - JS-controlled transitions for snapping
 - Disabled during drag for responsiveness
 
-🔮 Coming Soon:
+## 🔮 Coming Soon:
 * Quadrant snapping (tiling layout)
 * Magnetic edge snapping
 * Workspace system (virtual desktops)
@@ -58,13 +58,13 @@ Each window is a DOM element with:
 * Window stacking / z-index management
 * App system (YouTube, notes, etc. as windows)
 
-⚠️ Limitations
+## ⚠️ Limitations
 * Not a real window manager (runs in browser sandbox)
 * No process isolation
 * No true multi-monitor awareness
 * Performance tied to DOM rendering
 
-🤝 P.S.
+## 🤝 End Notes
 This is a personal experimental project, but feel free to fork and build on it.
 This project is less about replicating an OS and more about understanding why modern window managers feel the way they do.
 Turns out — it's mostly good state management and even better animations.
