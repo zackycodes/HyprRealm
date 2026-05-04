@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyprealm V 2.26 — Modern</title>
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #121212;
+        font-family: Consolas, monospace;
+        overflow: hidden;
+        color: #ddd;
+    }
+
+    #desktop {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+
+    .console {
+        position: absolute;
+        width: 400px;
+        height: 200px;
+        background: rgba(20, 20, 20, 0.85);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+        color: #00ff88;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        box-sizing: border-box;
+        cursor: grab;
+        overflow: hidden;
+
+        transition: 
+            transform 0.25s ease,
+            opacity 0.25s ease,
+            width 0.2s ease,
+            height 0.2s ease,
+            left 0.15s ease,
+            top 0.15s ease;
+    
+    }
+
+    .console.active {
+        opacity: 1;
+        /*transform: scale(1);*/
+        transform: scale(1) translateY(0px);
+    }
+
+    .console.dragging {
+        transition: none;
+        cursor: grabbing;
+        box-shadow: 0 14px 32px rgba(0, 255, 136, 0.5);
+    }
+
+    .console.closing {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    .console.focused {
+    box-shadow: 0 16px 40px rgba(0, 255, 136, 0.25);
+    transform: scale(1.01);
+    }   
+
+    .resizer {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        bottom: 0;
+        right: 0;
+        background: transparent;
+        cursor: nwse-resize;
+    }
+
+    .close-btn, .redir-btn {
+        position: absolute;
+        top: 6px;
+        font-size: 11px;
+        border: none;
+        padding: 3px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: bold;
+        transition: background 0.2s ease;
+    }
+
+    .close-btn {
+        right: 6px;
+        background: #ff3b3b;
+        color: white;
+    }
+    .close-btn:hover { background: #ff1f1f; }
+
+    .redir-btn {
+        left: 6px;
+        background: #00ff88;
+        color: #000;
+    }
+    .redir-btn:hover { background: #00dd77; }
+
+    textarea.temp-textarea {
+        position: absolute;
+        top: 24px;
+        left: 0;
+        width: calc(100% - 20px);
+        height: calc(100% - 34px);
+        margin: 10px;
+        resize: none;
+        border: none;
+        background-color: transparent;
+        color: #00ff88;
+        font-family: Consolas, monospace;
+        font-size: 16px;
+        outline: none;
+    }
+
+
+
+    .snap-ghost {
+        position: absolute;
+        background: rgba(0, 255, 136, 0.15);
+        border: 2px solid rgba(0, 255, 136, 0.6);
+        border-radius: 10px;
+        pointer-events: none;
+        opacity:0.2;
+        z-index: 9999;
+        display: none;
+    }
+
+    .snap-ghost {
+    transition: all 0.25s ease;
+    backdrop-filter: blur(4px);
+    }
+.close-btn:active,
+.redir-btn:active {
+    transform: scale(0.9);
+}
+</style>
+</head>
+<body>
+<div id="desktop"></div>
+
+<script>
+let lastInteractedConsole = null;
+let isEditing = false;
+let lastCtrlPress = 0;
+let lastTildePress = 0;
+let lastYPress = 0;
+let lastGPress = 0;
+const snapGhost = document.createElement('div');
+snapGhost.classList.add('snap-ghost');
+document.getElementById('desktop').appendChild(snapGhost);
+
+document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'n') openConsole();
+    else if (e.key === ';') closeLastConsole();
+    /*
+    else if (e.key === 'Control') {
+        const now = Date.now();
+        if (now - lastCtrlPress < 300 && lastInteractedConsole) toggleTemporaryTextbox(lastInteractedConsole);
+        lastCtrlPress = now;
+    } else if (e.key === '\\' && isEditing) {
+        exitEditingMode(lastInteractedConsole);
+    }*/
+    else if (e.key === '`') {
+        const now = Date.now();
+        if (now - lastTildePress < 300) openTaskManager();
+        lastTildePress = now;
+    }
+    else if (e.key.toLowerCase() === 'y') {
+    const now = Date.now();
+    if (now - lastYPress < 300) {
+        window.open('https://youtube.com', '_blank');
+    }
+    lastYPress = now;
+    }
+    else if (e.key.toLowerCase() === 'g') {
+        const now = Date.now();
+        if (now - lastGPress < 300) {
+            window.open('https://google.com', '_blank');
+        }
+        lastGPress = now;
+}
+});
+
+function openConsole() {
+    const desktop = document.getElementById('desktop');
+    const consoleWindow = document.createElement('div');
+    consoleWindow.classList.add('console');
+
+    consoleWindow.style.top = `${window.innerHeight / 2 - 100}px`;
+    consoleWindow.style.left = `${window.innerWidth / 2 - 200}px`;
+
+    const header = document.createElement('div');
+    header.style.height = '24px';
+    header.style.width = '100%';
+    header.style.cursor = 'grab';
+    header.style.background = 'transparent'; // or slight tint if you want
+    header.style.position = 'absolute';
+    header.style.top = '0';
+    header.style.left = '0';
+
+    consoleWindow.appendChild(header);
+
+    const textarea = document.createElement('textarea');
+    textarea.classList.add('temp-textarea');
+    textarea.placeholder = "Start typing...";
+    consoleWindow.appendChild(textarea);
+
+    const resizer = document.createElement('div');
+    resizer.classList.add('resizer');
+
+    const closeBtn = document.createElement('button');
+    closeBtn.classList.add('close-btn');
+    closeBtn.textContent = '×';
+    closeBtn.onclick = () => closeWindow(consoleWindow);
+
+    /*const redirBtn = document.createElement('button');
+    redirBtn.classList.add('redir-btn');
+    redirBtn.textContent = 'YouTube';
+    redirBtn.onclick = () => window.open('https://youtube.com', '_blank');*/
+
+    consoleWindow.appendChild(resizer);
+    consoleWindow.appendChild(closeBtn);
+    /*consoleWindow.appendChild(redirBtn);*/
+
+    desktop.appendChild(consoleWindow);
+
+    requestAnimationFrame(() => consoleWindow.classList.add('active'));
+
+    consoleWindow.addEventListener('mousedown', () => lastInteractedConsole = consoleWindow);
+
+    makeDraggable(consoleWindow);
+    makeResizable(consoleWindow, resizer);
+    textarea.focus();
+}
+
+function openTaskManager() {
+    const desktop = document.getElementById('desktop');
+    const win = document.createElement('div');
+    win.classList.add('console');
+    win.style.width = '320px';
+    win.style.height = '220px';
+    win.innerHTML = `
+        <div style="font-weight:bold; font-size:1.1rem; margin-bottom:8px;">Task Manager</div>
+        RAM: 16GB<br>
+        In Use: Chrome - 7GB<br>
+        CPU: Intel ##-####<br>
+        Processes: 83<br>
+        Threads: 1920<br>
+        Disk: 0%
+    `;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.classList.add('close-btn');
+    closeBtn.textContent = '×';
+    closeBtn.onclick = () => closeWindow(win);
+
+    /*const redirBtn = document.createElement('button');
+    redirBtn.classList.add('redir-btn');
+    redirBtn.textContent = 'Google';
+    redirBtn.onclick = () => window.open('https://google.com', '_blank');*/
+
+    win.appendChild(closeBtn);
+    win.appendChild(redirBtn);
+
+    win.style.top = `${window.innerHeight / 2 - 110}px`;
+    win.style.left = `${window.innerWidth / 2 - 160}px`;
+
+    desktop.appendChild(win);
+    requestAnimationFrame(() => win.classList.add('active'));
+
+    makeDraggable(win);
+}
+
+function openHelpWindow() {
+    const desktop = document.getElementById('desktop');
+    const win = document.createElement('div');
+    win.classList.add('console');
+
+    win.style.width = '260px';
+    win.style.height = '180px';
+    win.style.top = '20px';
+    win.style.left = '20px';
+    win.style.userSelect = 'none';
+
+
+    win.innerHTML = `
+        <div style="font-weight:bold; margin-bottom:6px;">Keybinds</div><br>
+        N → New window<br>
+        ; → Close window<br>
+        Y Y → YouTube<br>
+        G G → Google<br>
+        \` \` → Task Manager
+    `;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.classList.add('close-btn');
+    closeBtn.textContent = '×';
+    closeBtn.onclick = () => closeWindow(win);
+
+    win.appendChild(closeBtn);
+
+    desktop.appendChild(win);
+    requestAnimationFrame(() => win.classList.add('active'));
+
+    makeDraggable(win);
+}
+
+function closeWindow(el) {
+    el.classList.add('closing');
+    setTimeout(() => el.remove(), 250);
+}
+
+function closeLastConsole() {
+    if (lastInteractedConsole) closeWindow(lastInteractedConsole);
+}
+
+
+/*
+function toggleTemporaryTextbox(win) {
+    if (!isEditing) {
+        const textarea = document.createElement('textarea');
+        textarea.classList.add('temp-textarea');
+        textarea.value = win.textContent.trim();
+        win.innerHTML = '';
+        win.appendChild(textarea);
+        textarea.focus();
+        isEditing = true;
+    } else exitEditingMode(win);
+}
+
+function exitEditingMode(win) {
+    const textarea = win.querySelector('textarea');
+    if (textarea) {
+        win.textContent = textarea.value;
+        isEditing = false;
+    }
+}
+*/
+function makeDraggable(el) {
+    let isDragging = false, startX, startY, startLeft, startTop;
+    let velX = 0, velY = 0;
+
+    const dragHandle = el.querySelector('div');
+
+    dragHandle.addEventListener('mousedown', (e) => {
+
+        if (el.dataset.snapped === "true") {
+            el.style.left = el.dataset.prevLeft;
+            el.style.top = el.dataset.prevTop;
+            el.style.width = el.dataset.prevWidth;
+            el.style.height = el.dataset.prevHeight;
+
+            el.dataset.snapped = "";
+        }
+
+        if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON') return;
+        isDragging = true;
+        el.classList.add('dragging');
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = parseInt(el.style.left) || 0;
+        startTop = parseInt(el.style.top) || 0;
+        velX = velY = 0;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        velX = e.movementX;
+        velY = e.movementY;
+        el.style.left = `${(parseInt(el.style.left) || startLeft) + velX}px`;
+        el.style.top = `${(parseInt(el.style.top) || startTop) + velY}px`;
+
+        const rect = el.getBoundingClientRect();
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
+        const snapThreshold = 40;
+
+        snapGhost.style.display = 'none';
+
+        // LEFT
+        if (rect.left < snapThreshold) {
+            snapGhost.style.display = 'block';
+            snapGhost.style.left = '0px';
+            snapGhost.style.top = '0px';
+            snapGhost.style.width = `${screenW / 2}px`;
+            snapGhost.style.height = `${screenH}px`;
+        }
+
+        // RIGHT
+        else if (rect.right > screenW - snapThreshold) {
+            snapGhost.style.display = 'block';
+            snapGhost.style.left = `${screenW / 2}px`;
+            snapGhost.style.top = '0px';
+            snapGhost.style.width = `${screenW / 2}px`;
+            snapGhost.style.height = `${screenH}px`;
+        }
+
+        // TOP (maximize)
+        else if (rect.top < snapThreshold) {
+            snapGhost.style.display = 'block';
+            snapGhost.style.left = '0px';
+            snapGhost.style.top = '0px';
+            snapGhost.style.width = `${screenW}px`;
+            snapGhost.style.height = `${screenH}px`;
+        }
+    });
+
+    /*document.addEventListener('mouseup', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        el.classList.remove('dragging');
+        applyMomentum();
+    });*/
+    document.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    el.classList.remove('dragging');
+
+    snapWindow(el);
+    applyMomentum();
+    snapGhost.style.display = 'none';
+});
+//velX = 0;
+//velY = 0;
+
+    function applyMomentum() {
+        velX *= 0.9;
+        velY *= 0.9;
+        el.style.left = `${(parseInt(el.style.left) || 0) + velX}px`;
+        el.style.top = `${(parseInt(el.style.top) || 0) + velY}px`;
+        if (Math.abs(velX) > 0.5 || Math.abs(velY) > 0.5) requestAnimationFrame(applyMomentum);
+    }
+}
+
+function makeResizable(el, resizer) {
+    let isResizing = false, startW, startH, startX, startY;
+
+    resizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startW = parseInt(getComputedStyle(el).width);
+        startH = parseInt(getComputedStyle(el).height);
+        startX = e.clientX;
+        startY = e.clientY;
+        e.stopPropagation();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        el.style.width = `${startW + (e.clientX - startX)}px`;
+        el.style.height = `${startH + (e.clientY - startY)}px`;
+    });
+
+    document.addEventListener('mouseup', () => isResizing = false);
+}
+
+function snapWindow(el) {
+
+    if (snapGhost.style.display === 'block') {
+    const ghostRect = snapGhost.getBoundingClientRect();
+
+    // store previous size if not already snapped
+    if (!el.dataset.snapped) {
+        el.dataset.prevLeft = el.style.left;
+        el.dataset.prevTop = el.style.top;
+        el.dataset.prevWidth = el.style.width;
+        el.dataset.prevHeight = el.style.height;
+    }
+
+    el.dataset.snapped = "true";
+
+    // Animate to ghost
+    el.style.transition = "all 0.2s ease";
+
+    el.style.left = `${ghostRect.left}px`;
+    el.style.top = `${ghostRect.top}px`;
+    el.style.width = `${ghostRect.width}px`;
+    el.style.height = `${ghostRect.height}px`;
+
+    setTimeout(() => {
+        el.style.transition = "";
+    }, 200);
+
+    return; // skip old snapping logic
+}
+    const snapThreshold = 40;
+
+    const rect = el.getBoundingClientRect();
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+
+    //el.style.transition = "all 0.2s ease";
+
+    if (!el.dataset.snapped) {
+    el.dataset.prevLeft = el.style.left;
+    el.dataset.prevTop = el.style.top;
+    el.dataset.prevWidth = el.style.width;
+    el.dataset.prevHeight = el.style.height;
+    }
+
+    // LEFT SNAP
+    if (rect.left < snapThreshold) {
+        el.dataset.snapped = "true";
+        el.style.left = '0px';
+        el.style.top = '0px';
+        el.style.width = `${screenW / 2}px`;
+        el.style.height = `${screenH}px`;
+    }
+
+    // RIGHT SNAP
+    else if (rect.right > screenW - snapThreshold) {
+        el.dataset.snapped = "true";
+        el.style.left = `${screenW / 2}px`;
+        el.style.top = '0px';
+        el.style.width = `${screenW / 2}px`;
+        el.style.height = `${screenH}px`;
+    }
+
+    // TOP SNAP (maximize)
+    else if (rect.top < snapThreshold) {
+        el.dataset.snapped = "true";
+        el.style.left = '0px';
+        el.style.top = '0px';
+        el.style.width = `${screenW}px`;
+        el.style.height = `${screenH}px`;
+    }
+
+
+}
+
+window.onload = () => {
+    openHelpWindow();
+};
+</script>
+</body>
+</html>
