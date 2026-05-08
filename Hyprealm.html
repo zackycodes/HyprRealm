@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hyprealm V 2.26 — Modern</title>
 <style>
+
+    :root {
+    --hypr-bezier: cubic-bezier(0.34, 1.46, 0.64, 0.6);
+    }
     body, html {
         margin: 0;
         padding: 0;
@@ -32,7 +36,7 @@
         border-radius: 10px;
         box-shadow: 0 12px 30px rgba(0,0,0,0.5);
         color: #00ff88;
-        opacity: 0; 
+        opacity: 0;
         transform: scale(0.8);
         transition: opacity 0.25s ease, transform 0.25s ease;
         display: flex;
@@ -42,21 +46,22 @@
         cursor: grab;
         overflow: hidden;
 
-        transition: 
-            transform 0.25s ease,
-            opacity 0.25s ease,
-            width 0.2s ease,
-            height 0.2s ease,
-            left 0.15s ease,
-            top 0.15s ease;
+    transition: 
+        transform 0.4s var(--hypr-bezier),
+        opacity 0.3s ease,
+        width 0.4s var(--hypr-bezier),
+        height 0.4s var(--hypr-bezier),
+        left 0.4s var(--hypr-bezier),
+        top 0.4s var(--hypr-bezier);
     
     }
 
     .console.active {
         opacity: 1;
-        /*transform: scale(1);*/
-        transform: scale(1) translateY(0px);
+        transform: scale(1); /* Removes the translateY for a cleaner pop-in */
     }
+
+
 
     .console.dragging {
         transition: none;
@@ -70,10 +75,10 @@
     }
 
     .console.focused {
-    box-shadow: 0 16px 40px rgba(0, 255, 136, 0.25);
-    transform: scale(1.01);
-    }   
-
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+    transform: scale(1.02); /* Slight bounce when you click/focus a window */
+    z-index: 100;
+}
     .resizer {
         position: absolute;
         width: 12px;
@@ -139,7 +144,6 @@
         z-index: 9999;
         display: none;
     }
-
     .snap-ghost {
     transition: all 0.25s ease;
     backdrop-filter: blur(4px);
@@ -160,32 +164,62 @@ let lastCtrlPress = 0;
 let lastTildePress = 0;
 let lastYPress = 0;
 let lastGPress = 0;
+let lastEPress = 0;
+
 const snapGhost = document.createElement('div');
 snapGhost.classList.add('snap-ghost');
 document.getElementById('desktop').appendChild(snapGhost);
 
 document.addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 'n') openConsole();
-    else if (e.key === ';') closeLastConsole();
-    else if (e.key === '`') {
+
+    const typingInTextarea =
+    document.activeElement.tagName === 'TEXTAREA';
+
+    if (!typingInTextarea && e.key.toLowerCase() === 'n') {
+    e.preventDefault();
+    openConsole();
+    }
+    else if (!typingInTextarea && e.key === ';') closeLastConsole();
+    /*
+    else if (e.key === 'Control') {
+        const now = Date.now();
+        if (now - lastCtrlPress < 300 && lastInteractedConsole) toggleTemporaryTextbox(lastInteractedConsole);
+        lastCtrlPress = now;
+    } else if (e.key === '\\' && isEditing) {
+        exitEditingMode(lastInteractedConsole);
+    }*/
+    else if (!typingInTextarea && e.key === '`') {
         const now = Date.now();
         if (now - lastTildePress < 300) openTaskManager();
         lastTildePress = now;
     }
-    else if (e.key.toLowerCase() === 'y') {
+    else if (!typingInTextarea && e.key.toLowerCase() === 'y') {
     const now = Date.now();
     if (now - lastYPress < 300) {
         window.open('https://youtube.com', '_blank');
     }
     lastYPress = now;
     }
-    else if (e.key.toLowerCase() === 'g') {
+    else if (!typingInTextarea && e.key.toLowerCase() === 'g')
+    {
         const now = Date.now();
         if (now - lastGPress < 300) {
             window.open('https://google.com', '_blank');
         }
-        lastGPress = now;
+    lastGPress = now;
+    }
+    else if (!typingInTextarea && e.key.toLowerCase() === 'e') {
+    const now = Date.now();
+
+    if (now - lastEPress < 300 && lastInteractedConsole) {
+        executeCommands(lastInteractedConsole);
+    }
+
+    lastEPress = now;
 }
+
+
+
 });
 
 function openConsole() {
@@ -211,6 +245,8 @@ function openConsole() {
     textarea.classList.add('temp-textarea');
     textarea.placeholder = "Start typing...";
     consoleWindow.appendChild(textarea);
+
+    consoleWindow.textarea = textarea;
 
     const resizer = document.createElement('div');
     resizer.classList.add('resizer');
@@ -267,7 +303,7 @@ function openTaskManager() {
     redirBtn.onclick = () => window.open('https://google.com', '_blank');*/
 
     win.appendChild(closeBtn);
-    win.appendChild(redirBtn);
+    //win.appendChild(redirBtn);
 
     win.style.top = `${window.innerHeight / 2 - 110}px`;
     win.style.left = `${window.innerWidth / 2 - 160}px`;
@@ -347,7 +383,8 @@ function makeDraggable(el) {
     let isDragging = false, startX, startY, startLeft, startTop;
     let velX = 0, velY = 0;
 
-    const dragHandle = el.querySelector('div');
+    const dragHandle =
+    el.querySelector('.window-header') || el;
 
     dragHandle.addEventListener('mousedown', (e) => {
 
@@ -381,11 +418,63 @@ function makeDraggable(el) {
         const screenW = window.innerWidth;
         const screenH = window.innerHeight;
         const snapThreshold = 40;
+        const topEdge = rect.top < snapThreshold;
+        const leftEdge = rect.left < snapThreshold;
+        const rightEdge = rect.right > screenW - snapThreshold;
+        const bottomEdge = rect.bottom > screenH - snapThreshold;
 
         snapGhost.style.display = 'none';
 
+        // TOP LEFT
+        if (topEdge && leftEdge) {
+
+            snapGhost.style.display = 'block';
+
+            snapGhost.style.left = '0px';
+            snapGhost.style.top = '0px';
+
+            snapGhost.style.width = `${screenW / 2}px`;
+            snapGhost.style.height = `${screenH / 2}px`;
+        }
+
+        // TOP RIGHT
+        else if (topEdge && rightEdge) {
+
+            snapGhost.style.display = 'block';
+
+            snapGhost.style.left = `${screenW / 2}px`;
+            snapGhost.style.top = '0px';
+
+            snapGhost.style.width = `${screenW / 2}px`;
+            snapGhost.style.height = `${screenH / 2}px`;
+        }
+
+        // BOTTOM LEFT
+        else if (bottomEdge && leftEdge) {
+
+            snapGhost.style.display = 'block';
+
+            snapGhost.style.left = '0px';
+            snapGhost.style.top = `${screenH / 2}px`;
+
+            snapGhost.style.width = `${screenW / 2}px`;
+            snapGhost.style.height = `${screenH / 2}px`;
+        }
+
+        // BOTTOM RIGHT
+        else if (bottomEdge && rightEdge) {
+
+            snapGhost.style.display = 'block';
+
+            snapGhost.style.left = `${screenW / 2}px`;
+            snapGhost.style.top = `${screenH / 2}px`;
+
+            snapGhost.style.width = `${screenW / 2}px`;
+            snapGhost.style.height = `${screenH / 2}px`;
+        }
+
         // LEFT
-        if (rect.left < snapThreshold) {
+        else if (rect.left < snapThreshold) {
             snapGhost.style.display = 'block';
             snapGhost.style.left = '0px';
             snapGhost.style.top = '0px';
@@ -476,7 +565,7 @@ function snapWindow(el) {
     el.dataset.snapped = "true";
 
     // Animate to ghost
-    el.style.transition = "all 0.2s ease";
+    el.style.transition = "all 0.4s var(--hypr-bezier)";
 
     el.style.left = `${ghostRect.left}px`;
     el.style.top = `${ghostRect.top}px`;
@@ -532,6 +621,129 @@ function snapWindow(el) {
     }
 
 
+}
+
+function executeCommands(win) {
+    const text = win.textarea.value;
+
+    const lines = text.split('\n');
+
+    lines.forEach(line => {
+        line = line.trim();
+
+        // Ignore comments/non-commands
+        if (!line.startsWith('%')) return;
+
+        parseCommand(line, win);
+    });
+}
+
+function parseCommand(line, win) {
+
+    // Remove %
+    line = line.trim(); // Add this line
+    line = line.substring(1);
+
+    const parts = line.split(' ');
+
+    const command = parts[0];
+
+    const params = parts.slice(1);
+
+    // COMMANDS
+    if (command === 'buildgui') {
+        handleBuildGUI(params, win);
+    }
+}
+
+function handleBuildGUI(params, win) {
+
+    let size = '(20x20)';
+    let position = '(0,0)';
+    let type = null;
+
+    params.forEach(param => {
+
+        if (param === '--time') {
+            type = 'time';
+        }
+
+        else if (param.startsWith('--(') && param.includes('x')) {
+            size = param.replace('--', '');
+        }
+
+        else if (param.startsWith('--(') && param.includes(',')) {
+            position = param.replace('--', '');
+        }
+
+    });
+
+    if (type === 'time') {
+        createClockWidget(size, position);
+    }
+}
+
+function createClockWidget(size, position) {
+
+    const desktop = document.getElementById('desktop');
+
+    const widget = document.createElement('div');
+
+    widget.classList.add('console');
+
+    // Parse size
+    const sizeMatch = size.match(/\((\d+)x(\d+)\)/);
+
+    let w = 200;
+    let h = 80;
+
+    if (sizeMatch) {
+        w = parseInt(sizeMatch[1]) * 10;
+        h = parseInt(sizeMatch[2]) * 4;
+    }
+
+    // Parse position
+    const posMatch = position.match(/\(([-\d]+),([-\d]+)\)/);
+
+    let x = window.innerWidth / 2 - w / 2;
+    let y = window.innerHeight / 2 - h / 2;
+
+    if (posMatch) {
+
+        const offsetX = parseInt(posMatch[1]);
+        const offsetY = parseInt(posMatch[2]);
+
+        // Offset FROM CENTER
+        x += offsetX;
+        y += offsetY;
+}
+
+    widget.style.width = `${w}px`;
+    widget.style.height = `${h}px`;
+
+    widget.style.left = `${x}px`;
+    widget.style.top = `${y}px`;
+
+    widget.style.display = 'flex';
+    widget.style.alignItems = 'center';
+    widget.style.justifyContent = 'center';
+
+    widget.style.fontSize = '2rem';
+
+    desktop.appendChild(widget);
+
+    function updateClock() {
+        const now = new Date();
+
+        widget.textContent =
+            now.toLocaleTimeString();
+    }
+
+    updateClock();
+    makeDraggable(widget);
+    setInterval(updateClock, 1000);
+
+    requestAnimationFrame(() => widget.classList.add('active'));
 }
 
 window.onload = () => {
