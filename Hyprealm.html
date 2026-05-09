@@ -1,9 +1,20 @@
+<!--
+- ADD HELP TO LIST ALL COMMANDS!!
+- dont use if command ===
+use a registry of commands
+
+- gaps in consoles
+
+
+-->
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hyprealm V 2.26 — Modern</title>
+<title>Hyprealm V 2.28 — Modern</title>
 <style>
 
     :root {
@@ -45,6 +56,7 @@
         box-sizing: border-box;
         cursor: grab;
         overflow: hidden;
+
 
     transition: 
         transform 0.4s var(--hypr-bezier),
@@ -148,6 +160,17 @@
     transition: all 0.25s ease;
     backdrop-filter: blur(4px);
     }
+
+    .matrix-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0; /* Sits behind the textarea */
+    pointer-events: none; /* Allows you to still click and type */
+}
+
 .close-btn:active,
 .redir-btn:active {
     transform: scale(0.9);
@@ -158,6 +181,17 @@
 <div id="desktop"></div>
 
 <script>
+window.onerror = function(msg, src, line, col, err) {
+    console.error(
+        "GLOBAL ERROR:",
+        msg,
+        "LINE:",
+        line
+    );
+};
+
+
+
 let lastInteractedConsole = null;
 let isEditing = false;
 let lastCtrlPress = 0;
@@ -165,10 +199,12 @@ let lastTildePress = 0;
 let lastYPress = 0;
 let lastGPress = 0;
 let lastEPress = 0;
-
+const magneticDistance = 80;
+const magneticStrength = 0.05;
 const snapGhost = document.createElement('div');
 snapGhost.classList.add('snap-ghost');
 document.getElementById('desktop').appendChild(snapGhost);
+
 
 document.addEventListener('keydown', (e) => {
 
@@ -409,14 +445,61 @@ function makeDraggable(el) {
 
     document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
+
+
         velX = e.movementX;
         velY = e.movementY;
-        el.style.left = `${(parseInt(el.style.left) || startLeft) + velX}px`;
-        el.style.top = `${(parseInt(el.style.top) || startTop) + velY}px`;
+        //el.style.left = `${(parseInt(el.style.left) || startLeft) + velX}px`;
+        //el.style.top = `${(parseInt(el.style.top) || startTop) + velY}px`;
+
+        let newX =
+    (parseInt(el.style.left) || startLeft) + velX;
+
+let newY =
+    (parseInt(el.style.top) || startTop) + velY;
+
+const screenW = window.innerWidth;
+const screenH = window.innerHeight;
+const magneticDistance = 100;
+const magneticStrength = 0.01;
+
+// LEFT EDGE
+if (newX < magneticDistance) {
+
+    const pull =
+        (magneticDistance - newX)
+        * magneticStrength;
+
+    newX -= pull;
+}
+
+// RIGHT EDGE
+const rightDist =
+    screenW - (newX + el.offsetWidth);
+
+if (rightDist < magneticDistance) {
+
+    const pull =
+        (magneticDistance - rightDist)
+        * magneticStrength;
+
+    newX += pull;
+}
+
+// TOP EDGE
+if (newY < magneticDistance) {
+
+    const pull =
+        (magneticDistance - newY)
+        * magneticStrength;
+
+    newY -= pull;
+}
+
+el.style.left = `${newX}px`;
+el.style.top = `${newY}px`;
 
         const rect = el.getBoundingClientRect();
-        const screenW = window.innerWidth;
-        const screenH = window.innerHeight;
         const snapThreshold = 40;
         const topEdge = rect.top < snapThreshold;
         const leftEdge = rect.left < snapThreshold;
@@ -654,6 +737,15 @@ function parseCommand(line, win) {
     if (command === 'buildgui') {
         handleBuildGUI(params, win);
     }
+
+    else if (command === 'matrix') {
+        startMatrixEffect(win);
+    }
+
+    else if (command === '%hyprfetch') {
+    showFetch(win);
+
+    }
 }
 
 function handleBuildGUI(params, win) {
@@ -686,10 +778,10 @@ function handleBuildGUI(params, win) {
 function createClockWidget(size, position) {
 
     const desktop = document.getElementById('desktop');
-
     const widget = document.createElement('div');
 
     widget.classList.add('console');
+    widget.style.userSelect = 'none';
 
     // Parse size
     const sizeMatch = size.match(/\((\d+)x(\d+)\)/);
@@ -742,9 +834,124 @@ function createClockWidget(size, position) {
     updateClock();
     makeDraggable(widget);
     setInterval(updateClock, 1000);
-
     requestAnimationFrame(() => widget.classList.add('active'));
+    lastInteractedConsole = true
 }
+
+
+function startMatrixEffect(win) {
+    const canvas = document.createElement('canvas');
+    canvas.classList.add('matrix-canvas');
+    win.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    const fontSize = 14;
+    let columns, drops;
+
+    // This function resets the math whenever the window size changes
+    function setupCanvas() {
+        canvas.width = win.clientWidth;
+        canvas.height = win.clientHeight;
+        
+        columns = Math.floor(canvas.width / fontSize);
+        // Preserve existing drops if they exist, otherwise start at 1
+        if (!drops) {
+            drops = new Array(columns).fill(1);
+        } else {
+            // Adjust array size if window gets wider
+            const oldLength = drops.length;
+            if (columns > oldLength) {
+                for (let i = oldLength; i < columns; i++) drops[i] = 1;
+            }
+        }
+    }
+
+    // CREATE THE OBSERVER: This is the magic part
+    const resizeObserver = new ResizeObserver(() => {
+        setupCanvas();
+    });
+    resizeObserver.observe(win);
+
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~";
+
+    function draw() {
+        // Draw the trail
+        ctx.fillStyle = "rgba(18, 18, 18, 0.1)"; // Increased opacity slightly for cleaner resizing
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#0f8";
+        ctx.font = fontSize + "px monospace";
+
+        for (let i = 0; i < drops.length; i++) {
+            const text = chars.charAt(Math.floor(Math.random() * chars.length));
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
+        }
+    }
+
+    const matrixInterval = setInterval(draw, 33);
+    
+    // Clean up to prevent memory leaks
+    win.addEventListener('remove', () => {
+        clearInterval(matrixInterval);
+        resizeObserver.disconnect();
+    });
+}
+
+function showFetch(win) {
+    const logo = `
+   __   __  __   __  _______  _______
+  |  | |  ||  |_|  ||       ||       |
+  |  |_|  ||       ||    _  ||    _  | 
+  |       ||       ||   |_| ||   |_| |
+  |       |  |   |  |    ___||    _  |
+  |   _   |  |   |   |   |   |   | | |
+  |__| |__|  |___|   |___|   |___| |_|
+    `;
+    const stats = `
+OS: Hyprealm V 2.28
+Shell: hypr
+WM: Hyprealm v2.28
+
+
+Uptime: ${Math.floor(performance.now() / 60000)} mins
+    `;
+    win.textarea.value = logo + "\n" + stats;
+resizeWindowToText(win);
+
+
+}
+
+
+
+
+function resizeWindowToText(win) {
+
+    const lines = win.textarea.value.split('\n');
+
+    let longestLine = 0;
+
+    lines.forEach(line => {
+        if (line.length > longestLine) {
+            longestLine = line.length;
+        }
+    });
+
+    // Character sizing approximation
+    const charWidth = 9;
+    const lineHeight = 20;
+
+    const width = longestLine * charWidth + 60;
+    const height = lines.length * lineHeight + 80;
+
+    win.style.width = `${width}px`;
+    win.style.height = `${height}px`;
+}
+
 
 window.onload = () => {
     openHelpWindow();
