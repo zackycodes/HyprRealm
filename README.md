@@ -50,9 +50,7 @@ Each window is a DOM element with:
 - Disabled during drag for responsiveness
 
 ## 🔮 Coming Soon:
-* Quadrant snapping (tiling layout)
-* Magnetic edge snapping
-* Workspace system (virtual desktops)
+* Quadrant snapping (tiling layout) ✔
 * Persistent window state (localStorage)
 * Terminal command parsing
 * Window stacking / z-index management
