@@ -355,20 +355,57 @@ function openHelpWindow() {
     const win = document.createElement('div');
     win.classList.add('console');
 
-    win.style.width = '260px';
-    win.style.height = '180px';
-    win.style.top = '20px';
-    win.style.left = '20px';
+    // Expanded dimensions to prevent a squished feeling
+    win.style.width = '520px';
+    win.style.height = '380px';
+    win.style.top = '40px';
+    win.style.left = '40px';
     win.style.userSelect = 'none';
 
-
+    // Internal container layout using grid for perfect spacing
     win.innerHTML = `
-        <div style="font-weight:bold; margin-bottom:6px;">Keybinds</div><br>
-        N → New window<br>
-        ; → Close window<br>
-        Y Y → YouTube<br>
-        G G → Google<br>
-        \` \` → Task Manager
+        <div style="display: flex; flex-direction: column; width: 100%; height: 100%; padding: 10px 5px; box-sizing: border-box; color: #00ff88;">
+            <div style="font-weight: bold; font-size: 1.2rem; border-bottom: 1px solid rgba(0,255,136,0.3); padding-bottom: 8px; margin-bottom: 15px; letter-spacing: 1px;">
+                HYPREALM COMMAND & SHORTCUT REGISTRY
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; overflow-y: auto; flex-grow: 1;">
+                <div>
+                    <div style="font-weight: bold; color: #fff; margin-bottom: 8px; text-decoration: underline;">SYSTEM KEYBINDS</div>
+                    <ul style="list-style: none; padding: 0; margin: 0; line-height: 1.6; font-size: 13px;">
+                        <li><b style="color: #fff;">N</b> <span style="color:#aaa;">➔</span> New Window</li>
+                        <li><b style="color: #fff;">;</b> <span style="color:#aaa;">➔</span> Close Active Window</li>
+                        <li><b style="color: #fff;">R + R</b> <span style="color:#aaa;">➔</span> Execute Commands</li>
+                        <li><b style="color: #fff;">\` + \`</b> <span style="color:#aaa;">➔</span> Task Manager</li>
+                        <li><b style="color: #fff;">Y + Y</b> <span style="color:#aaa;">➔</span> Open YouTube</li>
+                        <li><b style="color: #fff;">G + G</b> <span style="color:#aaa;">➔</span> Open Google</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div style="font-weight: bold; color: #fff; margin-bottom: 8px; text-decoration: underline;">CONSOLE COMMANDS</div>
+                    <div style="font-size: 13px; line-height: 1.5;">
+                        <div style="margin-bottom: 10px;">
+                            <b style="color: #fff;">%matrix</b>
+                            <div style="color: #aaa; padding-left: 10px; font-size: 11px;">Spawns digital rain code effect.</div>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <b style="color: #fff;">%%hyprfetch</b>
+                            <div style="color: #aaa; padding-left: 10px; font-size: 11px;">Displays system configurations.</div>
+                        </div>
+                        <div>
+                            <b style="color: #fff;">%buildgui [args]</b>
+                            <div style="color: #aaa; padding-left: 10px; font-size: 11px;">
+                                Build UI widgets.<br>
+                                <span style="color: #00ff88;">• --time</span> (Creates Clock)<br>
+                                <span style="color: #00ff88;">• --(WxH)</span> (Custom Size)<br>
+                                <span style="color: #00ff88;">• --(X,Y)</span> (Center Offset)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     `;
 
     const closeBtn = document.createElement('button');
@@ -383,7 +420,6 @@ function openHelpWindow() {
 
     makeDraggable(win);
 }
-
 function closeWindow(el) {
     el.classList.add('closing');
     setTimeout(() => el.remove(), 250);
@@ -866,7 +902,7 @@ function startMatrixEffect(win) {
         }
     }
 
-    // CREATE THE OBSERVER: This is the magic part
+    // CREATE THE OBSERVER
     const resizeObserver = new ResizeObserver(() => {
         setupCanvas();
     });
