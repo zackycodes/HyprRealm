@@ -36,7 +36,23 @@
 
 ## Version 2.26 -> 2.28 - 'Massive Changes'
 - Removed textarea-macro overlap
-
-- Added first command; %buildgui (details about command (like syntax) will be published in the readme, after the version is stabilized, and tested)
-
+- Added first command; %buildgui (details about command (like syntax) will be published in the next patch note and readme, after the version is stabilized, and tested)
 - Added foundations of quadrantic snapping, will be polished soon.
+- Added ghost previews
+
+## Version 2.29 - 'Fixes, polishing'
+- Commands feature; officially implemented successfully
+- Some include; %matrix, %%hyprfetch and the major one, %buildgui
+- Features of __%buildmatrix__:
+  - Has 3 parameters; widget, widget parameters (2) e.g. size and position
+  - Use of '--' in each parameter
+- Many more commands prototyped
+- Quadrant snap → Fullscreen fixed
+- Smoother quadrant and half screen snapping
+- Ghost previews smoother, lesser opacity, cleaner snapping
+- Polished Help window
+
+
+
+
+
