@@ -50,6 +50,7 @@
 - Quadrant snap → Fullscreen fixed
 - Smoother quadrant and half screen snapping
 - Ghost previews smoother, lesser opacity, cleaner snapping
+- Fixed command activation key setting
 - Polished Help window
 
 
