@@ -382,6 +382,10 @@ function openHelpWindow() {
                     <div style="font-weight: bold; color: #fff; margin-bottom: 8px; text-decoration: underline;">CONSOLE COMMANDS</div>
                     <div style="font-size: 13px; line-height: 1.5;">
                         <div style="margin-bottom: 10px;">
+                            <b style="color: #fff;">%cls</b>
+                            <div style="color: #aaa; padding-left: 10px; font-size: 11px;">Clears the console textarea buffer.</div>
+                        </div>
+                        <div style="margin-bottom: 10px;">
                             <b style="color: #fff;">%matrix</b>
                             <div style="color: #aaa; padding-left: 10px; font-size: 11px;">Spawns digital rain code effect.</div>
                         </div>
@@ -777,6 +781,11 @@ function parseCommand(line, win) {
     else if (command === '%hyprfetch') {
     showFetch(win);
 
+    }
+    else if (command === 'cls') {
+    if (win.textarea) {
+        win.textarea.value = '';
+    }
     }
 }
 
