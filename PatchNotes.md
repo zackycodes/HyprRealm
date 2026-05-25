@@ -40,7 +40,7 @@
 - Added foundations of quadrantic snapping, will be polished soon.
 - Added ghost previews
 
-## Version 2.29 - 'Fixes, polishing'
+## Version 2.28 -> 2.30 - 'Fixes, Polishing, and Commands!'
 - Commands feature; officially implemented successfully
 - Some include; %matrix, %%hyprfetch and the major one, %buildgui
 - Features of __%buildmatrix__:
@@ -52,6 +52,10 @@
 - Ghost previews smoother, lesser opacity, cleaner snapping
 - Fixed command activation key setting
 - Polished Help window
+
+## Version 2.31 - 'Fixes v2'
+- Fixed scaling `%matrix ` command
+
 
 
 
